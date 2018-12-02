@@ -18,7 +18,9 @@
   <xsl:param name="clientProxy"/>
   <xsl:param name="defaultNamespace"/>
   <xsl:param name="import"/>
-  
+  <xsl:param name="extend"/>
+  <xsl:param name="darkNode"/>
+   
   <xsl:key name="fieldNames" match="//FieldDescriptorProto" use="name"/>
   <xsl:output method="text" indent="no" omit-xml-declaration="yes"/>
 
@@ -33,6 +35,8 @@
   <xsl:variable name="optionFullFramework" select="not($lightFramework='true')"/>
   <xsl:variable name="optionAsynchronous" select="$asynchronous='true'"/>
   <xsl:variable name="optionClientProxy" select="$clientProxy='true'"/>
+  <xsl:variable name="optionExtensible" select="$extend='true'"/>
+  <xsl:variable name="optionDarkNode" select="$darkNode='true'"/>
 
   <xsl:template match="/">
     <xsl:text disable-output-escaping="yes">//------------------------------------------------------------------------------
@@ -41,6 +45,9 @@
 //
 //     Changes to this file may cause incorrect behavior and will be lost if
 //     the code is regenerated.
+//     
+//     Generating tool modified by Lichuan Deng.
+//
 // &lt;/auto-generated&gt;
 //------------------------------------------------------------------------------
 </xsl:text><!--
@@ -67,22 +74,24 @@ using <xsl:value-of select="$ns"/>;
         CSharp template for protobuf-net.
         Options:
         General:
-          "help" - this page
+        "help" - this page
         Additional serializer support:
-          "xml" - enable explicit xml support (XmlSerializer)
-          "datacontract" - enable data-contract support (DataContractSerializer; requires .NET 3.0)
-          "binary" - enable binary support (BinaryFormatter; not supported on Silverlight)
+        "xml" - enable explicit xml support (XmlSerializer)
+        "datacontract" - enable data-contract support (DataContractSerializer; requires .NET 3.0)
+        "binary" - enable binary support (BinaryFormatter; not supported on Silverlight)
         Other:
-          "protoRpc" - enable proto-rpc client
-          "observable" - change notification (observer pattern) support
-          "preObservable" - pre-change notification (observer pattern) support (requires .NET 3.5)
-          "partialMethods" - provide partial methods for changes (requires C# 3.0)
-          "detectMissing" - provide *Specified properties to indicate whether fields are present
-          "lightFramework" - omit additional attributes not included in CF/Silverlight
-          "asynchronous" - emit asynchronous methods for use with WCF
-          "clientProxy" - emit asynchronous client proxy class
-          "import" - additional namespaces to import (semicolon delimited)
-          "fixCase" - change type/member names (types/properties become PascalCase; fields become camelCase)
+        "protoRpc" - enable proto-rpc client
+        "observable" - change notification (observer pattern) support
+        "preObservable" - pre-change notification (observer pattern) support (requires .NET 3.5)
+        "partialMethods" - provide partial methods for changes (requires C# 3.0)
+        "detectMissing" - provide *Specified properties to indicate whether fields are present
+        "lightFramework" - omit additional attributes not included in CF/Silverlight
+        "asynchronous" - emit asynchronous methods for use with WCF
+        "clientProxy" - emit asynchronous client proxy class
+        "import" - additional namespaces to import (semicolon delimited)
+        "fixCase" - change type/member names (types/properties become PascalCase; fields become camelCase)
+        "extend" - enable extend from ProtoBuf.IExtensible
+        "darkNode" - enable modify data in DarkNode-Gragh
       </xsl:message>
     </xsl:if>
 
@@ -92,7 +101,7 @@ using <xsl:value-of select="$ns"/>;
       </xsl:message>
     </xsl:if>
     <xsl:if test="$optionXml">
-// Option: xml serialization ([XmlType]/[XmlElement]) enabled
+// Option: xml serialization ([XmlType]/[XmlAttribute]/[XmlElement]) enabled
     </xsl:if><xsl:if test="$optionDataContract">
 // Option: data-contract serialization ([DataContract]/[DataMember]) enabled
     </xsl:if><xsl:if test="$optionBinary">
@@ -109,6 +118,10 @@ using <xsl:value-of select="$ns"/>;
 // Option: light framework (CF/Silverlight) enabled
     </xsl:if><xsl:if test="$optionProtoRpc">
 // Option: proto-rpc enabled
+    </xsl:if><xsl:if test="$optionExtensible">
+// Option: extensible enabled
+    </xsl:if><xsl:if test="$optionDarkNode">
+// Option: DarkNode enabled
   </xsl:if>
     <xsl:call-template name="WriteUsings">
       <xsl:with-param name="ns" select="$import"/>
@@ -153,7 +166,9 @@ namespace <xsl:value-of select="translate($namespace,':-/\','__..')"/>
   <xsl:if test="$optionDataContract">[global::System.Runtime.Serialization.DataContract(Name=@"<xsl:value-of select="name"/>")]
   </xsl:if><xsl:if test="$optionXml">[global::System.Xml.Serialization.XmlType(TypeName=@"<xsl:value-of select="name"/>")]
   </xsl:if><!--
-  -->public partial class <xsl:call-template name="pascal"/> : global::ProtoBuf.IExtensible<!--
+  -->public partial class <xsl:call-template name="pascal"/><!--
+  --><xsl:if test="$optionDarkNode"> : XNode.Node</xsl:if><!--
+  --><xsl:if test="$optionExtensible"> : global::ProtoBuf.IExtensible</xsl:if><!--
   --><xsl:if test="$optionBinary">, global::System.Runtime.Serialization.ISerializable</xsl:if><!--
   --><xsl:if test="$optionObservable">, global::System.ComponentModel.INotifyPropertyChanged</xsl:if><!--
   --><xsl:if test="$optionPreObservable">, global::System.ComponentModel.INotifyPropertyChanging</xsl:if>
@@ -172,10 +187,10 @@ namespace <xsl:value-of select="translate($namespace,':-/\','__..')"/>
     public event global::System.ComponentModel.PropertyChangingEventHandler PropertyChanging;
     protected virtual void OnPropertyChanging(string propertyName)
     { if(PropertyChanging != null) PropertyChanging(this, new global::System.ComponentModel.PropertyChangingEventArgs(propertyName)); }
-    </xsl:if>
+    </xsl:if><xsl:if test="$optionExtensible">
     private global::ProtoBuf.IExtension extensionObject;
     global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
-      { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }
+      { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }</xsl:if>
   }
   </xsl:template>
 
@@ -368,32 +383,41 @@ namespace <xsl:value-of select="translate($namespace,':-/\','__..')"/>
     <xsl:variable name="field"><xsl:apply-templates select="." mode="field"/></xsl:variable>
     <xsl:variable name="specified" select="$optionDetectMissing and ($primitiveType='struct' or $primitiveType='class')"/>
     <xsl:variable name="fieldType"><xsl:value-of select="$propType"/><xsl:if test="$specified and $primitiveType='struct'">?</xsl:if></xsl:variable>
-    private <xsl:value-of select="concat($fieldType,' ',$field)"/><xsl:if test="not($specified)"> = <xsl:value-of select="$defaultValue"/></xsl:if>;
+    // <xsl:value-of select="type"/><xsl:value-of select="type_name"/> : <xsl:value-of select="name"/>
     [<xsl:apply-templates select="." mode="checkDeprecated"/>global::ProtoBuf.ProtoMember(<xsl:value-of select="number"/>, IsRequired = false, Name=@"<xsl:value-of select="name"/>", DataFormat = global::ProtoBuf.DataFormat.<xsl:value-of select="$format"/>)]<!--
     --><xsl:if test="not($specified)">
     [global::System.ComponentModel.DefaultValue(<xsl:value-of select="$defaultValue"/>)]</xsl:if><!--
     --><xsl:if test="$optionXml">
+    <xsl:choose>
+        <xsl:when test="type='TYPE_MESSAGE'">
     [global::System.Xml.Serialization.XmlElement(@"<xsl:value-of select="name"/>", Order = <xsl:value-of select="number"/>)]
+        </xsl:when>
+        <xsl:otherwise>
+    [global::System.Xml.Serialization.XmlAttribute(@"<xsl:value-of select="name"/>")]
+        </xsl:otherwise>
+    </xsl:choose>
     </xsl:if><xsl:if test="$optionDataContract">
     [global::System.Runtime.Serialization.DataMember(Name=@"<xsl:value-of select="name"/>", Order = <xsl:value-of select="number"/>, IsRequired = false)]
-    </xsl:if><xsl:call-template name="WriteGetSet">
-      <xsl:with-param name="fieldType" select="$fieldType"/>
-      <xsl:with-param name="propType" select="$propType"/>
-      <xsl:with-param name="name"><xsl:call-template name="pascal"/></xsl:with-param>
-      <xsl:with-param name="field" select="$field"/>
-      <xsl:with-param name="defaultValue" select="$defaultValue"/>
-      <xsl:with-param name="specified" select="$specified"/>
-    </xsl:call-template>
+    </xsl:if>
+	public <xsl:value-of select="concat($fieldType,' ')"/><xsl:value-of select="name"/><xsl:if test="not($specified)"> = <xsl:value-of select="$defaultValue"/></xsl:if>;
   </xsl:template>
   
   <xsl:template match="FieldDescriptorProto[label='LABEL_REQUIRED']">
     <xsl:variable name="type"><xsl:apply-templates select="." mode="type"/></xsl:variable>
     <xsl:variable name="format"><xsl:apply-templates select="." mode="format"/></xsl:variable>
     <xsl:variable name="field"><xsl:apply-templates select="." mode="field"/></xsl:variable>
-    private <xsl:value-of select="concat($type, ' ', $field)"/>;
+    // <xsl:value-of select="type"/><xsl:value-of select="type_name"/> : <xsl:value-of select="name"/>
+    public <xsl:value-of select="concat($type, ' ', $field)"/>;
     [<xsl:apply-templates select="." mode="checkDeprecated"/>global::ProtoBuf.ProtoMember(<xsl:value-of select="number"/>, IsRequired = true, Name=@"<xsl:value-of select="name"/>", DataFormat = global::ProtoBuf.DataFormat.<xsl:value-of select="$format"/>)]<!--
     --><xsl:if test="$optionXml">
+    <xsl:choose>
+        <xsl:when test="type='TYPE_MESSAGE'">
     [global::System.Xml.Serialization.XmlElement(@"<xsl:value-of select="name"/>", Order = <xsl:value-of select="number"/>)]
+        </xsl:when>
+        <xsl:otherwise>
+    [global::System.Xml.Serialization.XmlAttribute(@"<xsl:value-of select="name"/>")]
+        </xsl:otherwise>
+    </xsl:choose>
     </xsl:if><xsl:if test="$optionDataContract">
     [global::System.Runtime.Serialization.DataMember(Name=@"<xsl:value-of select="name"/>", Order = <xsl:value-of select="number"/>, IsRequired = true)]
     </xsl:if><xsl:call-template name="WriteGetSet">
@@ -445,19 +469,14 @@ namespace <xsl:value-of select="translate($namespace,':-/\','__..')"/>
     <xsl:variable name="type"><xsl:apply-templates select="." mode="type"/></xsl:variable>
     <xsl:variable name="format"><xsl:apply-templates select="." mode="format"/></xsl:variable>
     <xsl:variable name="field"><xsl:apply-templates select="." mode="field"/></xsl:variable>
-    private <xsl:if test="not($optionXml)">readonly</xsl:if> global::System.Collections.Generic.List&lt;<xsl:value-of select="$type" />&gt; <xsl:value-of select="$field"/> = new global::System.Collections.Generic.List&lt;<xsl:value-of select="$type"/>&gt;();
+    // <xsl:value-of select="type"/><xsl:value-of select="type_name"/> : <xsl:value-of select="name"/>
     [<xsl:apply-templates select="." mode="checkDeprecated"/>global::ProtoBuf.ProtoMember(<xsl:value-of select="number"/>, Name=@"<xsl:value-of select="name"/>", DataFormat = global::ProtoBuf.DataFormat.<xsl:value-of select="$format"/><xsl:if test="options/packed='true'">, Options = global::ProtoBuf.MemberSerializationOptions.Packed</xsl:if>)]<!--
     --><xsl:if test="$optionDataContract">
     [global::System.Runtime.Serialization.DataMember(Name=@"<xsl:value-of select="name"/>", Order = <xsl:value-of select="number"/>, IsRequired = false)]
     </xsl:if><xsl:if test="$optionXml">
     [global::System.Xml.Serialization.XmlElement(@"<xsl:value-of select="name"/>", Order = <xsl:value-of select="number"/>)]
     </xsl:if>
-    public global::System.Collections.Generic.List&lt;<xsl:value-of select="$type" />&gt; <xsl:call-template name="pascal"/>
-    {
-      get { return <xsl:value-of select="$field"/>; }<!--
-      --><xsl:if test="$optionXml">
-      set { <xsl:value-of select="$field"/> = value; }</xsl:if>
-    }
+	public <xsl:if test="not($optionXml)">readonly</xsl:if> global::System.Collections.Generic.List&lt;<xsl:value-of select="$type" />&gt; <xsl:value-of select="name"/> = new global::System.Collections.Generic.List&lt;<xsl:value-of select="$type"/>&gt;();
   </xsl:template>
 
   <xsl:template match="ServiceDescriptorProto">
